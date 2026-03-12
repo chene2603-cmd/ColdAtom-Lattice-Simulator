@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColdAtom-Lattice-Simulator v3.0 | 冷原子晶格仿真工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+            color: #333;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #2c3e50;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .control-panel {
+            flex: 1;
+            min-width: 300px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .visual-panel {
+            flex: 2;
+            min-width: 600px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .param-group {
+            margin-bottom: 20px;
+        }
+        .param-group h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 18px;
+            border-left: 4px solid #2980b9;
+            padding-left: 10px;
+        }
+        .slider-item {
+            margin-bottom: 15px;
+        }
+        .slider-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #34495e;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ecf0f1;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2980b9;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #1a5276;
+        }
+        .param-value {
+            font-size: 14px;
+            color: #e74c3c;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #2980b9;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #1a5276;
+        }
+        .btn-default {
+            background: #ecf0f1;
+            color: #333;
+        }
+        .btn-default:hover {
+            background: #bdc3c7;
+        }
+        .data-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .data-item span:first-child {
+            color: #34495e;
+        }
+        .data-item span:last-child {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .canvas-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        .phase-tip {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #e74c3c;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+    <!-- 数值计算依赖CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/numeric@1.2.6/numeric.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>ColdAtom-Lattice-Simulator v3.0 | 冷原子晶格仿真工具</h1>
+        <p>基于深晶格近似 | 超流-莫特绝缘相变仿真 | 科研预研/高校教学专用</p>
+    </div>
+
+    <div class="container">
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <div class="param-group">
+                <h3>物理参数调节</h3>
+                <div class="slider-item">
+                    <label>晶格深度 V₀ (Er)：<span class="param-value" id="v0-val">10.0</span></label>
+                    <input type="range" id="v0-slider" min="1" max="50" step="0.1" value="10">
+                </div>
+                <div class="slider-item">
+                    <label>原子间相互作用 U (Er)：<span class="param-value" id="u-val">50.0</span></label>
+                    <input type="range" id="u-slider" min="1" max="200" step="0.1" value="50">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="exp-mode">实验模式</button>
+                <button class="btn btn-default" id="theory-mode">理论模式</button>
+                <button class="btn btn-default" id="reset-btn">重置探索</button>
+            </div>
+
+            <div class="param-group">
+                <h3>实时计算结果</h3>
+                <div class="data-panel">
+                    <div class="data-item">
+                        <span>跃迁积分 t (Er)：</span>
+                        <span id="t-val">0.000</span>
+                    </div>
+                    <div class="data-item">
+                        <span>相互作用强度 U/t：</span>
+                        <span id="ut-val">0.00</span>
+                    </div>
+                    <div class="data-item">
+                        <span>超流序参量 |⟨a⟩|：</span>
+                        <span id="order-val">0.000</span>
+                    </div>
+                    <div class="data-item">
+                        <span>数涨落 Δn：</span>
+                        <span id="fluct-val">0.000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="param-group">
+                <h3>当前相态</h3>
+                <div class="phase-tip" id="phase-tip">
+                    超流相 (Superfluid Phase)
+                </div>
+            </div>
+        </div>
+
+        <!-- 可视化面板 -->
+        <div class="visual-panel">
+            <div class="canvas-group">
+                <canvas id="lattice-canvas" width="300" height="300" title="实空间晶格密度分布"></canvas>
+                <canvas id="momentum-canvas" width="300" height="300" title="动量空间分布(TOF)"></canvas>
+                <canvas id="phase-diagram" width="500" height="300" title="超流-莫特绝缘相变相图（点击记录实验点）"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>ColdAtom-Lattice-Simulator v3.0 | 基于MIT开源协议 | 商务对接：陈先生（szbb2603 / 534055736@qq.com）</p>
+    </div>
+
+    <script>
+        // 全局参数
+        const params = {
+            v0: 10.0,    // 晶格深度
+            u: 50.0,     // 相互作用
+            t: 0.0,      // 跃迁积分
+            ut: 0.0,     // U/t
+            order: 0.0,  // 超流序参量
+            fluct: 0.0,  // 数涨落
+            isTheoryMode: false, // 是否理论模式
+            expPoints: [] // 实验点数据
+        };
+
+        // DOM元素
+        const v0Slider = document.getElementById('v0-slider');
+        const v0Val = document.getElementById('v0-val');
+        const uSlider = document.getElementById('u-slider');
+        const uVal = document.getElementById('u-val');
+        const tVal = document.getElementById('t-val');
+        const utVal = document.getElementById('ut-val');
+        const orderVal = document.getElementById('order-val');
+        const fluctVal = document.getElementById('fluct-val');
+        const phaseTip = document.getElementById('phase-tip');
+        const expModeBtn = document.getElementById('exp-mode');
+        const theoryModeBtn = document.getElementById('theory-mode');
+        const resetBtn = document.getElementById('reset-btn');
+        // 画布
+        const latticeCanvas = document.getElementById('lattice-canvas');
+        const momentumCanvas = document.getElementById('momentum-canvas');
+        const phaseCanvas = document.getElementById('phase-diagram');
+        const lctx = latticeCanvas.getContext('2d');
+        const mctx = momentumCanvas.getContext('2d');
+        const pctx = phaseCanvas.getContext('2d');
+
+        // 初始化
+        window.onload = function() {
+            updateParams();
+            drawAllCanvas();
+            bindEvents();
+        };
+
+        // 物理公式计算
+        function calcPhysics() {
+            // 跃迁积分：t ≈ (4/√π) * V0^(3/4) * exp(-2√V0)
+            const sqrtV0 = Math.sqrt(params.v0);
+            params.t = (4 / Math.sqrt(Math.PI)) * Math.pow(params.v0, 3/4) * Math.exp(-2 * sqrtV0);
+            params.t = params.t < 1e-6 ? 1e-6 : params.t; // 防止除零
+
+            // U/t
+            params.ut = params.u / params.t;
+
+            // 超流序参量：|⟨a⟩| = exp(-√(ut/25)) （拟合公式，ut<25为超流，ut>25为绝缘）
+            params.order = Math.exp(-Math.sqrt(params.ut / 25));
+            params.order = Math.min(1, Math.max(0, params.order));
+
+            // 数涨落：Δn = 1 - |⟨a⟩| （超流相涨落小，绝缘相涨落大）
+            params.fluct = 1 - params.order;
+
+            // 更新相态
+            updatePhase();
+        }
+
+        // 更新相态提示
+        function updatePhase() {
+            if (params.ut < 24.5) {
+                phaseTip.textContent = '超流相 (Superfluid Phase)';
+                phaseTip.style.background = '#e3f2fd';
+                phaseTip.style.color = '#1565c0';
+            } else if (params.ut > 25.5) {
+                phaseTip.textContent = '莫特绝缘相 (Mott Insulator Phase)';
+                phaseTip.style.background = '#ffebee';
+                phaseTip.style.color = '#c62828';
+            } else {
+                phaseTip.textContent = '相变临界区 (Critical Region)';
+                phaseTip.style.background = '#fff3e0';
+                phaseTip.style.color = '#ef6c00';
+            }
+        }
+
+        // 更新参数显示
+        function updateParams() {
+            params.v0 = parseFloat(v0Slider.value);
+            params.u = parseFloat(uSlider.value);
+            v0Val.textContent = params.v0.toFixed(1);
+            uVal.textContent = params.u.toFixed(1);
+
+            // 计算物理量
+            calcPhysics();
+
+            // 更新显示
+            tVal.textContent = params.t.toFixed(3);
+            utVal.textContent = params.ut.toFixed(2);
+            orderVal.textContent = params.order.toFixed(3);
+            fluctVal.textContent = params.fluct.toFixed(3);
+        }
+
+        // 绘制实空间晶格（8x8）
+        function drawLattice() {
+            lctx.clearRect(0, 0, latticeCanvas.width, latticeCanvas.height);
+            const gridSize = 8;
+            const cellW = latticeCanvas.width / (gridSize + 2);
+            const cellH = latticeCanvas.height / (gridSize + 2);
+            const startX = cellW;
+            const startY = cellH;
+
+            // 绘制网格
+            lctx.strokeStyle = '#ddd';
+            lctx.lineWidth = 1;
+            for (let i = 0; i <= gridSize; i++) {
+                lctx.beginPath();
+                lctx.moveTo(startX + i * cellW, startY);
+                lctx.lineTo(startX + i * cellW, startY + gridSize * cellH);
+                lctx.stroke();
+                lctx.beginPath();
+                lctx.moveTo(startX, startY + i * cellH);
+                lctx.lineTo(startX + gridSize * cellW, startY + i * cellH);
+                lctx.stroke();
+            }
+
+            // 绘制粒子密度（超流相密度均匀，绝缘相密度分立）
+            lctx.fillStyle = '#2980b9';
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let density = params.order + Math.random() * 0.1; // 超流相基础密度
+                    if (params.ut > 25) {
+                        density = Math.round(Math.random() * 1); // 绝缘相分立密度（0/1）
+                    }
+                    density = Math.min(1, Math.max(0.1, density));
+
+                    lctx.beginPath();
+                    lctx.arc(
+                        startX + i * cellW + cellW/2,
+                        startY + j * cellH + cellH/2,
+                        density * cellW/2,
+                        0,
+                        Math.PI * 2
+                    );
+                    lctx.fill();
+                }
+            }
+
+            // 绘制标题
+            lctx.fillStyle = '#333';
+            lctx.font = '14px Microsoft YaHei';
+            lctx.textAlign = 'center';
+            lctx.fillText('实空间晶格密度分布 (8×8)', latticeCanvas.width/2, 20);
+        }
+
+        // 绘制动量空间分布
+        function drawMomentum() {
+            mctx.clearRect(0, 0, momentumCanvas.width, momentumCanvas.height);
+            const centerX = momentumCanvas.width / 2;
+            const centerY = momentumCanvas.height / 2;
+            const maxR = Math.min(centerX, centerY) - 20;
+
+            // 绘制背景圆
+            mctx.strokeStyle = '#ddd';
+            mctx.lineWidth = 1;
+            mctx.beginPath();
+            mctx.arc(centerX, centerY, maxR, 0, Math.PI * 2);
+            mctx.stroke();
+
+            // 动量分布：超流相有中心峰，绝缘相峰消失
+            mctx.fillStyle = '#e74c3c';
+            const peakR = maxR * (1 - params.order); // 超流相中心峰半径小
+            const pointsNum = params.order > 0.1 ? 500 : 50; // 超流相点更多
+
+            for (let i = 0; i < pointsNum; i++) {
+                const r = Math.random() * peakR;
+                const theta = Math.random() * Math.PI * 2;
+                const x = centerX + r * Math.cos(theta);
+                const y = centerY + r * Math.sin(theta);
+                const size = params.order > 0.5 ? 3 : 1;
+
+                mctx.beginPath();
+                mctx.arc(x, y, size, 0, Math.PI * 2);
+                mctx.fill();
+            }
+
+            // 绘制标题
+            mctx.fillStyle = '#333';
+            mctx.font = '14px Microsoft YaHei';
+            mctx.textAlign = 'center';
+            mctx.fillText('动量空间分布 (TOF仿真)', momentumCanvas.width/2, 20);
+        }
+
+        // 绘制相变相图
+        function drawPhaseDiagram() {
+            pctx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+            const marginX = 50;
+            const marginY = 40;
+            const plotW = phaseCanvas.width - 2 * marginX;
+            const plotH = phaseCanvas.height - 2 * marginY;
+
+            // 绘制坐标轴
+            pctx.strokeStyle = '#333';
+            pctx.lineWidth = 2;
+            // X轴：V0 (1~50)
+            pctx.beginPath();
+            pctx.moveTo(marginX, phaseCanvas.height - marginY);
+            pctx.lineTo(phaseCanvas.width - marginX, phaseCanvas.height - marginY);
+            pctx.stroke();
+            // Y轴：U (1~200)
+            pctx.beginPath();
+            pctx.moveTo(marginX, marginY);
+            pctx.lineTo(marginX, phaseCanvas.height - marginY);
+            pctx.stroke();
+
+            // 绘制坐标轴标签
+            pctx.fillStyle = '#333';
+            pctx.font = '14px Microsoft YaHei';
+            pctx.textAlign = 'center';
+            pctx.fillText('晶格深度 V₀ (Er)', phaseCanvas.width/2, phaseCanvas.height - 10);
+            pctx.save();
+            pctx.translate(20, phaseCanvas.height/2);
+            pctx.rotate(-Math.PI/2);
+            pctx.fillText('相互作用 U (Er)', 0, 0);
+            pctx.restore();
+
+            // 绘制刻度
+            pctx.lineWidth = 1;
+            pctx.font = '12px Microsoft YaHei';
+            // X轴刻度 (V0:10,20,30,40,50)
+            for (let v0 = 10; v0 <= 50; v0 += 10) {
+                const x = marginX + (v0 - 1) / 49 * plotW;
+                pctx.beginPath();
+                pctx.moveTo(x, phaseCanvas.height - marginY);
+                pctx.lineTo(x, phaseCanvas.height - marginY + 5);
+                pctx.stroke();
+                pctx.fillText(v0.toString(), x, phaseCanvas.height - marginY + 20);
+            }
+            // Y轴刻度 (U:50,100,150,200)
+            for (let u = 50; u <= 200; u += 50) {
+                const y = phaseCanvas.height - marginY - (u - 1) / 199 * plotH;
+                pctx.beginPath();
+                pctx.moveTo(marginX - 5, y);
+                pctx.lineTo(marginX, y);
+                pctx.stroke();
+                pctx.fillText(u.toString(), marginX - 20, y + 5);
+            }
+
+            // 绘制理论相变边界（U/t=25 → U=25*t(V0)）
+            if (params.isTheoryMode) {
+                pctx.strokeStyle = '#c62828';
+                pctx.lineWidth = 3;
+                pctx.beginPath();
+                for (let v0 = 1; v0 <= 50; v0 += 0.5) {
+                    const sqrtV0 = Math.sqrt(v0);
+                    const t = (4 / Math.sqrt(Math.PI)) * Math.pow(v0, 3/4) * Math.exp(-2 * sqrtV0);
+                    const u = 25 * t;
+                    if (u >= 1 && u <= 200) {
+                        const x = marginX + (v0 - 1) / 49 * plotW;
+                        const y = phaseCanvas.height - marginY - (u - 1) / 199 * plotH;
+                        if (v0 === 1) pctx.moveTo(x, y);
+                        else pctx.lineTo(x, y);
+                    }
+                }
+                pctx.stroke();
+                // 理论边界标签
+                pctx.fillStyle = '#c62828';
+                pctx.fillText('理论相变边界 (U/t=25)', phaseCanvas.width - marginX - 80, marginY + 30);
+            }
+
+            // 绘制实验点
+            pctx.fillStyle = '#2980b9';
+            params.expPoints.forEach(point => {
+                const x = marginX + (point.v0 - 1) / 49 * plotW;
+                const y = phaseCanvas.height - marginY - (point.u - 1) / 199 * plotH;
+                pctx.beginPath();
+                pctx.arc(x, y, 4, 0, Math.PI * 2);
+                pctx.fill();
+                pctx.strokeStyle = '#fff';
+                pctx.lineWidth = 1;
+                pctx.stroke();
+            });
+
+            // 绘制当前点
+            pctx.fillStyle = '#e74c3c';
+            const currX = marginX + (params.v0 - 1) / 49 * plotW;
+            const currY = phaseCanvas.height - marginY - (params.u - 1) / 199 * plotH;
+            pctx.beginPath();
+            pctx.arc(currX, currY, 5, 0, Math.PI * 2);
+            pctx.fill();
+            pctx.strokeStyle = '#fff';
+            pctx.lineWidth = 2;
+            pctx.stroke();
+
+            // 绘制标题
+            pctx.fillStyle = '#333';
+            pctx.font = '14px Microsoft YaHei';
+            pctx.textAlign = 'center';
+            pctx.fillText('超流-莫特绝缘相变相图（点击记录实验点）', phaseCanvas.width/2, 20);
+        }
+
+        // 绘制所有画布
+        function drawAllCanvas() {
+            drawLattice();
+            drawMomentum();
+            drawPhaseDiagram();
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 滑块事件
+            v0Slider.addEventListener('input', function() {
+                updateParams();
+                drawAllCanvas();
+            });
+            uSlider.addEventListener('input', function() {
+                updateParams();
+                drawAllCanvas();
+            });
+
+            // 按钮事件
+            expModeBtn.addEventListener('click', function() {
+                params.isTheoryMode = false;
+                expModeBtn.className = 'btn btn-primary';
+                theoryModeBtn.className = 'btn btn-default';
+                drawPhaseDiagram();
+            });
+            theoryModeBtn.addEventListener('click', function() {
+                params.isTheoryMode = true;
+                theoryModeBtn.className = '
