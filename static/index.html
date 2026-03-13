@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ColdAtom Simulator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { margin: 5px; padding: 8px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>ColdAtom Simulator v3.0</h1>
+    <p><strong>注意：</strong>请先设置你的 API Token（见 README）</p>
+    
+    <input type="text" id="token" placeholder="API Token" value="your-token">
+    <br>
+    <input type="text" id="model" placeholder="model_name.zip" value="test.zip">
+    <input type="number" id="steps" placeholder="timesteps" value="1000" min="100" max="1000000">
+    <br>
+    <button onclick="submitTrain()">Submit Training Job</button>
+    
+    <h2>Response:</h2>
+    <pre id="output">Click "Submit" to start.</pre>
+
+    <script>
+        async function submitTrain() {
+            const token = document.getElementById('token').value;
+            const model = document.getElementById('model').value;
+            const steps = parseInt(document.getElementById('steps').value);
+
+            const res = await fetch('/train', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ model_name: model, timesteps: steps })
+            });
+
+            const data = await res.json();
+            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
